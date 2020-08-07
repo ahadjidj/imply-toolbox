@@ -27,8 +27,14 @@ Watch the execution of the script. After some time, you should be able to access
 * NiFi : http://localhost:8080
 * Kafka Control Center : http://localhost:9021
 
+![image](../images/uis.png)
+
 Kafka is accessible to the other containers on kafka:29092
 
 A good place to start using the platform is here : https://docs.imply.io/on-prem/quickstart
+
+You can stop your pltform with `docker-compose stop` 
+
+When you finish your development, you can remove your containers with `docker-compose rm`
 
 Happy geeking

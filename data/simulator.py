@@ -1,21 +1,14 @@
 #!/usr/bin/env python
-"""a simple sensor data generator that sends to an MQTT broker via paho"""
+"""a simple data generator that sends to a Kafka broker"""
 import sys
 import json
 import time
 import random
-import paho.mqtt.client as mqtt
 from confluent_kafka import Producer
 import socket
 
 def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, providers, materials, machine_providers, interval_ms, inject_error, verbose):
-    """generate data and send it to an MQTT broker"""
-    """mqttc = mqtt.Client()
-
-    if username:
-        mqttc.username_pw_set(username, password)
-
-    mqttc.connect(host, port)"""
+    """generate data and send it to a Kafka broker"""
 
     interval_secs = interval_ms / 1000.0
 
@@ -63,26 +56,12 @@ def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, 
                                 data["materials"] = "silicon_multi_layers"
                             else:
                                 data["configuration"] = "multi_layer_custom" 
-                """
-                if (p == 0 or p == 4):
-                    if (m == 0): # that's the case of the plant that solved the issue
-                        data["configuration"] = "multi_layer_custom"            
-                    else:
-                        if (m == 4):
-                            if (inject_error == 'true'):
-                                data["rejected"] = random.randint(0, 2)
-                                data["temperature"] = random.randint(60, 65)
-                                data["vibration"] = random.randint(120, 130)
-                            else:
-                                data["configuration"] = "multi_layer_custom" 
-                """
 
                 payload = json.dumps(data)
 
                 if verbose:
                     print(payload)
 
-                #mqttc.publish(topic, payload)
                 producer.produce(topic, key=data["machine_id"], value=payload)
             producer.poll(0)
         time.sleep(interval_secs)

@@ -7,13 +7,13 @@ import random
 from confluent_kafka import Producer
 import socket
 
-def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, providers, materials, machine_providers, interval_ms, inject_error, devmode):
+def generate(producer, topic, nb_plants, plants, nb_machines, nb_metrics, metrics_ranges, metrics_labels, providers, materials, machine_providers, interval_ms, inject_error, devmode):
     """generate data and send it to a Kafka broker"""
 
     interval_secs = interval_ms / 1000.0
-
     random.seed()
     h = 0
+
     while True:
         h = h+1
 
@@ -32,10 +32,11 @@ def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, 
                 data["materials"] = materials.get("plant_"+ str(p))
                 data["machine_providers"] = machine_providers.get("machine_"+ str(m))
                 data["geo_country"] = plants.get("plant_"+ str(p))
-                data["city"] = plants.get("plant_"+ str(p)+"_city") 
-                for key in range(10):
-                    min_val, max_val = machines.get("sensor_" + str(key))
-                    label = labels.get("sensor_" + str(key))
+                data["city"] = plants.get("plant_"+ str(p)+"_city")
+
+                for key in range(nb_metrics):
+                    min_val, max_val = metrics_ranges.get("m_" + str(key))
+                    label = metrics_labels.get("m_" + str(key))
                     data[label] = random.randint(min_val, max_val)
 
                 # injecting normal error every 10 events to stay within 3%
@@ -78,15 +79,22 @@ def main(config_path,inject_error):
         with open(config_path) as handle:
             config = json.load(handle)
 
+            #prepare metrics configurations
             misc_config = config.get("misc", {})
             interval_ms = misc_config.get("interval_ms", 500)
             devmode = misc_config.get("devmode", False)
             nb_plants = misc_config.get("plants",3)
             nb_machines = misc_config.get("machines",3)
+            nb_metrics = misc_config.get("metrics",3)
+
+            #prepare metrics configurations
+            metrics_ranges = config.get("metrics_ranges")
+            metrics_labels = config.get("metrics_labels")
+
+
 
             plants = config.get("plants")
-            machines = config.get("machines")
-            labels = config.get("labels")
+            
             providers = config.get("providers")
             materials = config.get("materials")
             machine_providers = config.get("machine_providers")
@@ -98,7 +106,7 @@ def main(config_path,inject_error):
             kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
             producer = Producer(kafkaconf)
 
-            generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, providers, materials, machine_providers, interval_ms, inject_error, devmode)
+            generate(producer, topic, nb_plants, plants, nb_machines, nb_metrics, metrics_ranges, metrics_labels, providers, materials, machine_providers, interval_ms, inject_error, devmode)
 
     except IOError as error:
         print("Error opening config file '%s'" % config_path, error)

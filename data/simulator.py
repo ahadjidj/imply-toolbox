@@ -7,7 +7,7 @@ import random
 from confluent_kafka import Producer
 import socket
 
-def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, providers, materials, machine_providers, interval_ms, inject_error, verbose):
+def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, providers, materials, machine_providers, interval_ms, inject_error, devmode):
     """generate data and send it to a Kafka broker"""
 
     interval_secs = interval_ms / 1000.0
@@ -54,17 +54,17 @@ def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, 
                                 data["temperature"] = random.randint(60, 65)
                                 data["vibration"] = random.randint(120, 130)
                                 data["materials"] = "silicon_multi_layers"
-                                data["AAAAAAAAAAAAAAA"] = "BBBBBBBBBBBBBB"
                             else:
                                 data["configuration"] = "multi_layer_custom" 
 
                 payload = json.dumps(data)
 
-                if verbose:
+                if devmode:
                     print(payload)
+                else:
+                    producer.produce(topic, key=data["machine_id"], value=payload)
+                    producer.poll(0)
 
-                producer.produce(topic, key=data["machine_id"], value=payload)
-            producer.poll(0)
         time.sleep(interval_secs)
         if (h == 10):
             h = 0
@@ -80,7 +80,7 @@ def main(config_path,inject_error):
 
             misc_config = config.get("misc", {})
             interval_ms = misc_config.get("interval_ms", 500)
-            verbose = misc_config.get("verbose", True)
+            devmode = misc_config.get("devmode", False)
             nb_plants = misc_config.get("plants",3)
             nb_machines = misc_config.get("machines",3)
 
@@ -98,7 +98,7 @@ def main(config_path,inject_error):
             kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
             producer = Producer(kafkaconf)
 
-            generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, providers, materials, machine_providers, interval_ms, inject_error, verbose)
+            generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, providers, materials, machine_providers, interval_ms, inject_error, devmode)
 
     except IOError as error:
         print("Error opening config file '%s'" % config_path, error)

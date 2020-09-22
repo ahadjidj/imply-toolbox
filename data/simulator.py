@@ -54,6 +54,7 @@ def generate(producer, topic, nb_plants, nb_machines, plants, machines, labels, 
                                 data["temperature"] = random.randint(60, 65)
                                 data["vibration"] = random.randint(120, 130)
                                 data["materials"] = "silicon_multi_layers"
+                                data["AAAAAAAAAAAAAAA"] = "BBBBBBBBBBBBBB"
                             else:
                                 data["configuration"] = "multi_layer_custom" 
 
@@ -79,7 +80,7 @@ def main(config_path,inject_error):
 
             misc_config = config.get("misc", {})
             interval_ms = misc_config.get("interval_ms", 500)
-            verbose = misc_config.get("verbose", False)
+            verbose = misc_config.get("verbose", True)
             nb_plants = misc_config.get("plants",3)
             nb_machines = misc_config.get("machines",3)
 

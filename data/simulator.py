@@ -7,59 +7,78 @@ import random
 from confluent_kafka import Producer
 import socket
 
-def generate(producer, topic, nb_plants, plants, nb_machines, nb_metrics, metrics_ranges, metrics_labels, providers, materials, machine_providers, interval_ms, inject_error, devmode):
+def generate(producer, topic, asset_0, asset_1, nb_metrics, metrics_values, metrics_labels, interval_ms, inject_error, devmode):
     """generate data and send it to a Kafka broker"""
 
     interval_secs = interval_ms / 1000.0
     random.seed()
-    h = 0
+    iteration = 0
+
+    #extract assets dimensions details
+    asset_0_label = asset_0.get("label","asset_0")
+    asset_0_nb_assets = asset_0.get("assets","3")
+    asset_0_nb_dimensions = asset_0.get("dimensions","3")
+    asset_0_dimensions_values = asset_0.get("dimension_values",[])
+    asset_0_dimensions_labels = asset_0.get("dimension_labels",[])
+    asset_1_label = asset_1.get("label","asset_1")
+    asset_1_nb_assets = asset_1.get("assets","3")
+    asset_1_nb_dimensions = asset_1.get("dimensions","3")
+    asset_1_dimensions_values = asset_1.get("dimension_values",[])
+    asset_1_dimensions_labels = asset_1.get("dimension_labels",[])
+
 
     while True:
-        h = h+1
+        iteration = iteration+1
 
         data = {
             "sensor_ts": int(time.time()*1000000)
         }
 
-        for p in range(nb_plants):
-            for m in range(nb_machines):
-                data["plant_id"] = "plant_" + str(p)
-                data["machine_id"] = "machine_" + str(p) + "_" + str(m)
-                data["configuration"] = "vendor_default"
-                data["accepted"] = random.randint(5, 10)
-                data["rejected"] = 0
-                data["provider"] = providers.get("plant_"+ str(p))
-                data["materials"] = materials.get("plant_"+ str(p))
-                data["machine_providers"] = machine_providers.get("machine_"+ str(m))
-                data["geo_country"] = plants.get("plant_"+ str(p))
-                data["city"] = plants.get("plant_"+ str(p)+"_city")
+        for a0 in range(asset_0_nb_assets):
 
+            #GENERIC: generate asset_0 IDs
+            data[asset_0_label+"_id"] = asset_0_label+"_" + str(a0)
+
+            #GENERIC: generate asset_0 dimensions
+            for key in range(asset_0_nb_dimensions):
+                values = asset_0_dimensions_values.get("d_" + str(key))
+                label = asset_0_dimensions_labels.get("d_" + str(key))
+                data[label] = values[a0]
+
+            for a1 in range(asset_1_nb_assets):
+                #GENERIC: generate asset_1 IDs
+                data[asset_1_label+"_id"] = asset_1_label+"_" + str(a0)+"_"+str(a1)
+
+                #GENERIC: generate asset_1 dimensions
+                for key in range(asset_1_nb_dimensions):
+                    values = asset_1_dimensions_values.get("d_" + str(key))
+                    label = asset_1_dimensions_labels.get("d_" + str(key))
+                    data[label] = values[a1]
+
+                #GENERIC: generate metrics
                 for key in range(nb_metrics):
-                    min_val, max_val = metrics_ranges.get("m_" + str(key))
+                    min_val, max_val = metrics_values.get("m_" + str(key))
                     label = metrics_labels.get("m_" + str(key))
                     data[label] = random.randint(min_val, max_val)
-
-                # injecting normal error every 10 events to stay within 3%
-                if (h == 10):
+              
+                #Custom: Implement your abnormal behavior here ->
+                if (iteration == 10):
                     data["rejected"] = random.randint(0, 3)
+                if (a0 == 0 and (a1 == 0 or a1 == 4)):
+                    # that's the case of the plant that solved the issue
+                    data["machine_configuration"] = "multi_layer_custom"            
+                if (inject_error == 'true'):
+                    if (a0 == 4 and (a1 == 0 or a1 == 4)):
+                        data["rejected"] = random.randint(1, 2)
+                        data["temperature"] = random.randint(60, 65)
+                        data["vibration"] = random.randint(120, 130)
+                        data["materials"] = "silicon_multi_layers"
+                    #else:
+                        #data["machine_configuration"] = "multi_layer_custom" 
+                # -> end of abnormal behavior
 
-                
-                #handling the quality issue combination
-                if (m == 0 or m == 4):
-                    if (p == 0): # that's the case of the plant that solved the issue
-                        data["configuration"] = "multi_layer_custom"            
-                    else:
-                        if (p == 4):
-                            if (inject_error == 'true'):
-                                data["rejected"] = random.randint(1, 2)
-                                data["temperature"] = random.randint(60, 65)
-                                data["vibration"] = random.randint(120, 130)
-                                data["materials"] = "silicon_multi_layers"
-                            else:
-                                data["configuration"] = "multi_layer_custom" 
-
+                #GENERIC: publish the data
                 payload = json.dumps(data)
-
                 if devmode:
                     print(payload)
                 else:
@@ -67,8 +86,8 @@ def generate(producer, topic, nb_plants, plants, nb_machines, nb_metrics, metric
                     producer.poll(0)
 
         time.sleep(interval_secs)
-        if (h == 10):
-            h = 0
+        if (iteration == 10):
+            iteration = 0
 
         
 
@@ -83,12 +102,15 @@ def main(config_path,inject_error):
             misc_config = config.get("misc", {})
             interval_ms = misc_config.get("interval_ms", 500)
             devmode = misc_config.get("devmode", False)
-            nb_plants = misc_config.get("plants",3)
-            nb_machines = misc_config.get("machines",3)
-            nb_metrics = misc_config.get("metrics",3)
+
+            #prepare assets
+            asset_0 = config.get("asset_0",{})
+            asset_1 = config.get("asset_1",{})
+            
 
             #prepare metrics configurations
-            metrics_ranges = config.get("metrics_ranges")
+            nb_metrics = misc_config.get("metrics",3)
+            metrics_values = config.get("metrics_values")
             metrics_labels = config.get("metrics_labels")
 
 
@@ -106,7 +128,7 @@ def main(config_path,inject_error):
             kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
             producer = Producer(kafkaconf)
 
-            generate(producer, topic, nb_plants, plants, nb_machines, nb_metrics, metrics_ranges, metrics_labels, providers, materials, machine_providers, interval_ms, inject_error, devmode)
+            generate(producer, topic, asset_0, asset_1, nb_metrics, metrics_values, metrics_labels, interval_ms, inject_error, devmode)
 
     except IOError as error:
         print("Error opening config file '%s'" % config_path, error)

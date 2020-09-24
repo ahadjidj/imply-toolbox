@@ -18,13 +18,16 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
     asset_0_label = asset_0.get("label","asset_0")
     asset_0_nb_assets = asset_0.get("assets","3")
     asset_0_nb_dimensions = asset_0.get("dimensions","3")
-    asset_0_dimensions_values = asset_0.get("dimension_values",[])
     asset_0_dimensions_labels = asset_0.get("dimension_labels",[])
+    asset_0_dimensions_types = asset_0.get("dimension_types",[])
+    asset_0_dimensions_values = asset_0.get("dimension_values",[])
+
     asset_1_label = asset_1.get("label","asset_1")
     asset_1_nb_assets = asset_1.get("assets","3")
     asset_1_nb_dimensions = asset_1.get("dimensions","3")
-    asset_1_dimensions_values = asset_1.get("dimension_values",[])
     asset_1_dimensions_labels = asset_1.get("dimension_labels",[])
+    asset_1_dimensions_types = asset_1.get("dimension_types",[])
+    asset_1_dimensions_values = asset_1.get("dimension_values",[])
     asset_1_nb_metrics = asset_1.get("metrics",3)
     asset_1_metrics_values = asset_1.get("metrics_values")
     asset_1_metrics_labels = asset_1.get("metrics_labels")
@@ -45,8 +48,13 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
             #GENERIC: generate asset_0 dimensions
             for key in range(asset_0_nb_dimensions):
                 values = asset_0_dimensions_values.get("d_" + str(key))
-                label = asset_0_dimensions_labels.get("d_" + str(key))
-                data[label] = values[a0]
+                labels = asset_0_dimensions_labels.get("d_" + str(key))
+                types = asset_0_dimensions_types.get("d_" + str(key))
+                if types == "fixed":
+                    data[labels] = values[a0]
+                else:
+                    if types == "high_cardinality":
+                        data[labels] = labels + "_" + str(random.randint(0, values + 1))
 
             for a1 in range(asset_1_nb_assets):
                 #GENERIC: generate asset_1 IDs
@@ -55,8 +63,13 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
                 #GENERIC: generate asset_1 dimensions
                 for key in range(asset_1_nb_dimensions):
                     values = asset_1_dimensions_values.get("d_" + str(key))
-                    label = asset_1_dimensions_labels.get("d_" + str(key))
-                    data[label] = values[a1]
+                    labels = asset_1_dimensions_labels.get("d_" + str(key))
+                    types = asset_1_dimensions_types.get("d_" + str(key))
+                    if types == "fixed":
+                        data[labels] = values[a1]
+                    else:
+                        if types == "high_cardinality":
+                            data[labels] = labels + "_" + str(random.randint(0, values + 1))
 
                 #GENERIC: generate metrics
                 for key in range(asset_1_nb_metrics):

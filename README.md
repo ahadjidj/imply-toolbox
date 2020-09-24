@@ -1,5 +1,5 @@
 # SuperFactory
 
-This is the home of the Imply Industry 4.0 demo
+This is the home of several tools than can be used to demo how much Imply is great.
 
 TODO

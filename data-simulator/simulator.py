@@ -21,7 +21,6 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
     asset_0_dimensions_labels = asset_0.get("dimension_labels",[])
     asset_0_dimensions_types = asset_0.get("dimension_types",[])
     asset_0_dimensions_values = asset_0.get("dimension_values",[])
-
     asset_1_label = asset_1.get("label","asset_1")
     asset_1_nb_assets = asset_1.get("assets","3")
     asset_1_nb_dimensions = asset_1.get("dimensions","3")
@@ -88,9 +87,7 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
                         data["rejected"] = random.randint(1, 2)
                         data["temperature"] = random.randint(60, 65)
                         data["vibration"] = random.randint(120, 130)
-                        data["materials"] = "silicon_multi_layers"
-                    #else:
-                        #data["machine_configuration"] = "multi_layer_custom" 
+                        data["material"] = "silicon_multi_layers"
                 # -> end of abnormal behavior
 
                 #GENERIC: publish the data

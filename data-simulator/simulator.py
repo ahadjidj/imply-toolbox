@@ -7,7 +7,7 @@ import random
 from confluent_kafka import Producer
 import socket
 
-def generate(producer, topic, asset_0, asset_1, nb_metrics, metrics_values, metrics_labels, interval_ms, inject_error, devmode):
+def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmode):
     """generate data and send it to a Kafka broker"""
 
     interval_secs = interval_ms / 1000.0
@@ -25,6 +25,9 @@ def generate(producer, topic, asset_0, asset_1, nb_metrics, metrics_values, metr
     asset_1_nb_dimensions = asset_1.get("dimensions","3")
     asset_1_dimensions_values = asset_1.get("dimension_values",[])
     asset_1_dimensions_labels = asset_1.get("dimension_labels",[])
+    asset_1_nb_metrics = asset_1.get("metrics",3)
+    asset_1_metrics_values = asset_1.get("metrics_values")
+    asset_1_metrics_labels = asset_1.get("metrics_labels")
 
 
     while True:
@@ -56,9 +59,9 @@ def generate(producer, topic, asset_0, asset_1, nb_metrics, metrics_values, metr
                     data[label] = values[a1]
 
                 #GENERIC: generate metrics
-                for key in range(nb_metrics):
-                    min_val, max_val = metrics_values.get("m_" + str(key))
-                    label = metrics_labels.get("m_" + str(key))
+                for key in range(asset_1_nb_metrics):
+                    min_val, max_val = asset_1_metrics_values.get("m_" + str(key))
+                    label = asset_1_metrics_labels.get("m_" + str(key))
                     data[label] = random.randint(min_val, max_val)
               
                 #Custom: Implement your abnormal behavior here ->
@@ -108,27 +111,15 @@ def main(config_path,inject_error):
             asset_1 = config.get("asset_1",{})
             
 
-            #prepare metrics configurations
-            nb_metrics = misc_config.get("metrics",3)
-            metrics_values = config.get("metrics_values")
-            metrics_labels = config.get("metrics_labels")
-
-
-
-            plants = config.get("plants")
-            
-            providers = config.get("providers")
-            materials = config.get("materials")
-            machine_providers = config.get("machine_providers")
-
+            #prepare Kafka connection
             kafka_config = config.get("kafka", {})
             brokers = kafka_config.get("brokers", "localhost:9092")
-            topic = kafka_config.get("topic", "iot")
-
+            topic = kafka_config.get("topic", "simulator")
             kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
             producer = Producer(kafkaconf)
 
-            generate(producer, topic, asset_0, asset_1, nb_metrics, metrics_values, metrics_labels, interval_ms, inject_error, devmode)
+            #Start simulation
+            generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmode)
 
     except IOError as error:
         print("Error opening config file '%s'" % config_path, error)

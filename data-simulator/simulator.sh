@@ -1,18 +1,15 @@
 #!/bin/bash
 #
-BASE=~/SuperFactory/data
+BASE=~/imply-toolbox/data-simulator
 PID=/tmp/simulator.pid
 NORMAL=/tmp/normal.flag
 ABNORMAL=/tmp/abnormal.flag
 LOG=/tmp/simulator.log
 ERROR=/tmp/simulator-error.log
-CONFIG=iiot.config
-CMD='simulator.py'
-
+CONFIG=simulator.config
+CMD=simulator.py
 COMMAND_NORMAL="python3 $BASE/$CMD $BASE/$CONFIG false"
 COMMAND_ABNORMAL="python3 $BASE/$CMD $BASE/$CONFIG true"
-
-USR=user
 
 status() {
     echo

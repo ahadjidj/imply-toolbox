@@ -91,11 +91,10 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
                 # -> end of abnormal behavior
 
                 #GENERIC: publish the data
-                payload = json.dumps(data)
                 if devmode:
-                    print(payload, flush=True)
+                    print(json.dumps(data, indent=4), flush=True)
                 else:
-                    producer.produce(topic, key=data[asset_0_label+"_id"], value=payload)
+                    producer.produce(topic, key=data[asset_0_label+"_id"], value=json.dumps(data))
                     producer.poll(0)
 
         time.sleep(interval_secs)

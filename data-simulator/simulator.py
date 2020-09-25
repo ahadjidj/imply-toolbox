@@ -12,7 +12,6 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
 
     interval_secs = interval_ms / 1000.0
     random.seed()
-    iteration = 0
 
     #extract assets dimensions details
     asset_0_label = asset_0.get("label","asset_0")
@@ -33,10 +32,8 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
 
 
     while True:
-        iteration = iteration+1
-
         data = {
-            "sensor_ts": int(time.time()*1000000)
+            "timestamp": int(time.time()*1000000)
         }
 
         for a0 in range(asset_0_nb_assets):
@@ -78,25 +75,19 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
               
                 #Custom: Implement your abnormal behavior here ->          
                 if (inject_error == 'true'):
-                    if (a0 == 4 and (a1 == 0 or a1 == 4)):
-                        data["discount"] = random.randint(20, 25)
-                        data["quantity"] = random.randint(1, 99)
+                    data["discount"] = random.randint(20, 25)
+                    data["quantity"] = random.randint(1, 99)
                 # -> end of abnormal behavior
 
                 #GENERIC: publish the data
                 payload = json.dumps(data)
                 if devmode:
-                    print(payload)
+                    print(payload, flush=True)
                 else:
-                    producer.produce(topic, key=data["machine_id"], value=payload)
+                    producer.produce(topic, key=data[asset_0_label+"_id"], value=payload)
                     producer.poll(0)
 
         time.sleep(interval_secs)
-        if (iteration == 10):
-            iteration = 0
-
-        
-
 
 def main(config_path,inject_error):
     """main entry point, load and validate config and call generate"""

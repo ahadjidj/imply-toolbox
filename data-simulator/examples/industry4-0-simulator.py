@@ -36,7 +36,7 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
         iteration = iteration+1
 
         data = {
-            "sensor_ts": int(time.time()*1000000)
+            "timestamp": int(time.time()*1000000)
         }
 
         for a0 in range(asset_0_nb_assets):

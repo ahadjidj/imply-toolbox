@@ -76,18 +76,11 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
                     label = asset_1_metrics_labels.get("m_" + str(key))
                     data[label] = random.randint(min_val, max_val)
               
-                #Custom: Implement your abnormal behavior here ->
-                if (iteration == 10):
-                    data["rejected"] = random.randint(0, 3)
-                if (a0 == 0 and (a1 == 0 or a1 == 4)):
-                    # that's the case of the plant that solved the issue
-                    data["machine_configuration"] = "multi_layer_custom"            
+                #Custom: Implement your abnormal behavior here ->          
                 if (inject_error == 'true'):
                     if (a0 == 4 and (a1 == 0 or a1 == 4)):
-                        data["rejected"] = random.randint(1, 2)
-                        data["temperature"] = random.randint(60, 65)
-                        data["vibration"] = random.randint(120, 130)
-                        data["material"] = "silicon_multi_layers"
+                        data["discount"] = random.randint(20, 25)
+                        data["quantity"] = random.randint(1, 99)
                 # -> end of abnormal behavior
 
                 #GENERIC: publish the data
@@ -120,13 +113,16 @@ def main(config_path,inject_error):
             asset_0 = config.get("asset_0",{})
             asset_1 = config.get("asset_1",{})
             
-
-            #prepare Kafka connection
-            kafka_config = config.get("kafka", {})
-            brokers = kafka_config.get("brokers", "localhost:9092")
-            topic = kafka_config.get("topic", "simulator")
-            kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
-            producer = Producer(kafkaconf)
+            if devmode:
+                producer = 'null'
+                topic = 'null'
+            else:    
+                #prepare Kafka connection
+                kafka_config = config.get("kafka", {})
+                brokers = kafka_config.get("brokers", "localhost:9092")
+                topic = kafka_config.get("topic", "simulator")
+                kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
+                producer = Producer(kafkaconf)
 
             #Start simulation
             generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmode)

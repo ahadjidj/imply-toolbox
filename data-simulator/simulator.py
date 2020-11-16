@@ -7,11 +7,26 @@ import random
 from confluent_kafka import Producer
 import socket
 
-def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmode):
+def generate(config, asset_0, asset_1, interval_ms, inject_error, devmode, destination):
     """generate data and send it to a Kafka broker"""
 
     interval_secs = interval_ms / 1000.0
     random.seed()
+
+    if not devmode:
+        if destination == "kafka":
+            #prepare Kafka connection
+            kafka_config = config.get("kafka", {})
+            brokers = kafka_config.get("brokers", "localhost:9092")
+            topic = kafka_config.get("topic", "simulator")
+            kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
+            producer = Producer(kafkaconf)
+        else:    
+            if destination == "file":
+                file_config = config.get("file", {})
+                filepath = file_config.get("filepath","output.json")
+                destination_file = open(filepath, 'w+')
+    
 
     #extract assets dimensions details
     asset_0_label = asset_0.get("label","asset_0")
@@ -29,7 +44,6 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
     asset_1_nb_metrics = asset_1.get("metrics",3)
     asset_1_metrics_values = asset_1.get("metrics_values")
     asset_1_metrics_labels = asset_1.get("metrics_labels")
-
 
     while True:
         data = {
@@ -83,8 +97,12 @@ def generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmo
                 if devmode:
                     print(json.dumps(data, indent=4), flush=True)
                 else:
-                    producer.produce(topic, key=data[asset_0_label+"_id"], value=json.dumps(data))
-                    producer.poll(0)
+                    if destination == "kafka":
+                        producer.produce(topic, key=data[asset_0_label+"_id"], value=json.dumps(data))
+                        producer.poll(0)
+                    else:
+                        if destination == "file":
+                            destination_file.write(json.dumps(data) + '\n')
 
         time.sleep(interval_secs)
 
@@ -98,24 +116,14 @@ def main(config_path,inject_error):
             misc_config = config.get("misc", {})
             interval_ms = misc_config.get("interval_ms", 500)
             devmode = misc_config.get("devmode", False)
+            destination = misc_config.get("destination", "file")
 
             #prepare assets
             asset_0 = config.get("asset_0",{})
             asset_1 = config.get("asset_1",{})
-            
-            if devmode:
-                producer = 'null'
-                topic = 'null'
-            else:    
-                #prepare Kafka connection
-                kafka_config = config.get("kafka", {})
-                brokers = kafka_config.get("brokers", "localhost:9092")
-                topic = kafka_config.get("topic", "simulator")
-                kafkaconf = {'bootstrap.servers': brokers,'client.id': socket.gethostname()}
-                producer = Producer(kafkaconf)
 
             #Start simulation
-            generate(producer, topic, asset_0, asset_1, interval_ms, inject_error, devmode)
+            generate(config, asset_0, asset_1, interval_ms, inject_error, devmode, destination)
 
     except IOError as error:
         print("Error opening config file '%s'" % config_path, error)

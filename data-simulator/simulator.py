@@ -65,6 +65,9 @@ def generate(config, asset_0, asset_1, interval_ms, inject_error, devmode, desti
                 else:
                     if types == "high_cardinality":
                         data[labels] = labels + "_" + str(random.randint(0, values + 1))
+                    else: 
+                        if types == "random":
+                            data[labels] = random.choice(values)
 
             for a1 in range(asset_1_nb_assets):
                 #GENERIC: generate asset_1 IDs
@@ -80,6 +83,9 @@ def generate(config, asset_0, asset_1, interval_ms, inject_error, devmode, desti
                     else:
                         if types == "high_cardinality":
                             data[labels] = labels + "_" + str(random.randint(0, values + 1))
+                        else: 
+                            if types == "random":
+                                data[labels] = random.choice(values)
 
                 #GENERIC: generate metrics
                 for key in range(asset_1_nb_metrics):
